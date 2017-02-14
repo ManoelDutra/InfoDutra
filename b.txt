@@ -1,23 +1,73 @@
 /**
  * @version 13/02/2017 <BR>
 
-		ajustaMenu();
+private void fechaCaixa() {
 
-		nomemodulo = "Retaguarda";
-
-	}
-
-	public static void main( String sParams[] ) {
-
-		try {
-			Aplicativo.setLookAndFeel( "InfoDutra.ini" );
-			InfoDutraRTG InfoDutra = new InfoDutraRTG2();
-			FPrincipal2.carregaAgenda();
-			InfoDutraRTG.show();
-		} catch ( Throwable e ) {
-			Funcoes.criaTelaErro( "Erro de execucao\n" + e.getMessage() + "\n" + e.getCause() + "\n" + e.getLocalizedMessage() );
-			e.printStackTrace();
+		if ( lcVenda.getStatus() == ListaCampos.LCS_SELECT ) {
+			Funcoes.mensagemInforma( this, "Ainda existe uma venda ativa!" );
+			return;
 		}
-	}
-}
 
+		DLFechaDia fecha = new DLFechaDia();
+		fecha.setConexao( con );
+		fecha.setVisible( true );
+
+		if ( fecha.OK ) {
+			fecha.dispose();
+			this.dispose();
+		}
+
+		fecha.dispose();
+	}
+
+	public synchronized void fechaVenda() {
+
+		if ( lcVenda.getStatus() != ListaCampos.LCS_SELECT ) {
+			Funcoes.mensagemErro( this, "Não existe nenhuma venda ativa!" );
+			return;
+		}
+
+		if ( txtCodCli.getVlrInteger().intValue() != ( CODCLI ) ) {
+			trocouCli = true;
+		}
+
+		if ( ( (Boolean) prefs( 0 ) ).booleanValue() ) {
+			if ( prefs( 1 ) != null ) {
+				if ( Funcoes.mensagemConfirma( null, "Deseja adicionar o frete ao cupom?" ) == JOptionPane.YES_OPTION ) {
+					addItemFrete();
+				}
+			}
+		}
+
+		DLFechaVenda fecha = new DLFechaVenda( paramFecha() );
+		fecha.setVisible( true );
+
+		if ( fecha.OK ) {
+
+			if ( pluginVenda != null ) {
+				pluginVenda.afterFechaVenda();
+			}
+
+			iniVenda();
+		}
+		else if ( colocouFrete ) {
+
+			cancItem( ( (Integer) tbItem.getValor( tbItem.getNumLinhas() - 1, 0 ) ).intValue() );
+
+			if ( ecf.cancelaItem() ) {
+				btOK.doClick();
+			}
+			else {
+				Funcoes.mensagemErro( this, ecf.getMessageLog() );
+			}
+
+			colocouFrete = false;
+		}
+
+		fecha.dispose();
+
+		setFocusProd();
+		trocouCli = false;
+	}
+
+	
